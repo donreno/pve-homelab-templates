@@ -6,6 +6,8 @@ IMAGE_URL="https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-a
 SSH_KEY_FILE="/root/id_rsa.pub"
 SCRIPT_NAME=$0
 STORAGE=$1
+USER=$2
+PASSWORD=$3
 
 #Small node variables
 SMALL_ID=690
@@ -52,16 +54,31 @@ create_template() {
     qm set $id --boot c --bootdisk scsi0
     qm set $id --serial0 socket --vga serial0
     qm set $id --sshkey $SSH_KEY_FILE
+    qm set $id --ciuser $USER
+    qm set $id --cipassword $PASSWORD
+    qm set $id --ipconfig0 ip=dhcp
     qm template $id
 }
 
 usage() {
-    echo "Debe indicar el almacenamiento. Por ejemplo: $SCRIPT_NAME local-lvm"
+    echo "Debe indicar el almacenamiento, usuario y password. Por ejemplo: $SCRIPT_NAME local-lvm user password"
     exit 1
 }
 
 validate_storage_is_set() {
     if [ -z "$STORAGE" ]; then
+        usage
+    fi
+}
+
+validate_user_is_set() {
+    if [ -z "$USER" ]; then
+        usage
+    fi
+}
+
+validate_password_is_set() {
+    if [ -z "$PASSWORD" ]; then
         usage
     fi
 }
@@ -78,6 +95,8 @@ main() {
     install_cloud_init
     validate_storage_is_set
     validate_ssh_key
+    validate_user_is_set
+    validate_password_is_set
     download_ubuntu_cloud_image
     create_template $SMALL_ID $SMALL_NAME $SMALL_MEMORY $SMALL_CORES
     create_template $MEDIUM_ID $MEDIUM_NAME $MEDIUM_MEMORY $MEDIUM_CORES
